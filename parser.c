@@ -26,20 +26,20 @@ void body(void){
 
 /* namelist -> ID {, ID} */
 char **namelist(void){
-	/*[[*/char** symvec = calloc(MAX_ARG_NUM, sizeof(char**))/*]]*/;
-	/*[[*/int i = 0/*]]*/;
+	char** symvec = calloc(MAX_ARG_NUM, sizeof(char**));
+	int i = 0;
 
 	_namelist_begin:
 
-	/*[[*/symvec[i] = malloc(sizeof(lexeme)+1)/*]]*/;
-	/*[[*/strcpy(symvec[i],lexeme)/*]]*/;
+	symvec[i] = malloc(sizeof(lexeme)+1);
+	strcpy(symvec[i],lexeme);
 	i++;
 	match(ID);
-	if(lookahead == ';') {
+	if(lookahead == ',') {
 		match(',');
 		goto _namelist_begin;
 	}
-	/*[[*/return symvec/*]]*/;
+	return symvec;
 }
 
 int vartype(void){
@@ -88,8 +88,8 @@ void declarative(void){
 			type = vartype();
 			for(i = 0; namev[i]; i++) {
 				symtab_append(namev[i], type);
-				match(';');
 			}
+			match(';');
 		}while(lookahead == ID);
 	}
 
@@ -148,40 +148,55 @@ void stmt(void){
 	case '(':
 		expr(0);
 		break;
-	}
 	default:
 		/*<epsilon>*/
 		;
-
+	}
 }
 
+int labelcounter = 1;
 /* IF expr THEN stmt [ ELSE stmt ] */
 void ifstmt(void) {
+	int _endif, _else;
+
 	match(IF);
-	if(superexpr(BOOLEAN) < 0 ) //DEU RUIM
+	if(superexpr(BOOLEAN) < 0 ); //DEU RUIM
+	fprintf(object, "\tjz .L%d\n", _endif = _else = labelcounter++);
 	match(THEN);
 	stmt();
 
-	if(lookahead == ELSE){
+	if(lookahead == ELSE) {
 		match(ELSE);
+		fprintf(object, "\tjmp .L%d\n", _endif = labelcounter++);
+		fprintf(object, "\t.L%d:\n", _else);
 		stmt();
 	}
+	fprintf(object, "\t.L%d:\n", _endif);
 }
 
 /* WHILE expr REPEAT stmt */
 void whilestmt(void) {
+	int _while, _endwhile;
+
 	match(WHILE);
-	if(superexpr(BOOLEAN) < 0 ) //DEU RUIM
+	fprintf(object, "\t.L%d:\n", _while = labelcounter++);
+	if(superexpr(BOOLEAN) < 0 ); //DEU RUIM
+	fprintf(object, "\tjz .L%d\n", _endwhile = labelcounter++);
 	match(REPEAT);
 	stmt();
+	fprintf(object, "\tjmp .L%d\n", _while);
+	fprintf(object, "\t.L%d:\n", _endwhile);
 }
 
 /* REPEAT stmtlist UNTIL expr */
-void repstmt(void){
+void repstmt(void) {
+	int _repeat;
 	match(REPEAT);
+	fprintf(object, "\t.L%d:\n", _repeat = labelcounter++);
 	stmtlist();
 	match(UNTIL);
-	if(superexpr(BOOLEAN) < 0 ) //DEU RUIM
+	if(superexpr(BOOLEAN) < 0 ); //DEU RUIM
+	fprintf(object, "\tjnz .L%d\n", _repeat);
 }
 
 /*
@@ -278,7 +293,7 @@ int superexpr(inherited_type) {
 	if(is_relop()) {
 		t2 = expr(t1);
 	}
-	if()
+	//if() CHECAR COMPATIBILIDADE
 	return min(BOOLEAN, t2);
 }
 
