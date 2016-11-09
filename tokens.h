@@ -3,12 +3,16 @@
 enum {
 	ID = 1025,
 	DEC,
+	FLT,
+	DBL,
 	OCTAL,
 	HEX,
-	FLT,
 	ASGN,
+	GEQ,
+	LEQ,
+	NEQ,
 };
 
 enum {
-	SYNTAX_ERR = -64, // preencher a tabela de tokens de erros rsrsr
+	SYNTAX_ERR = -64,
 };

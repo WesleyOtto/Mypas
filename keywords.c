@@ -4,9 +4,9 @@
 #include <keywords.h>
 
 char *keywords[] = {"begin", "repeat", "until", "if",
-			"then", "else", "while", "do", "not", "var",
+			"then", "else", "while", "do", "var", "procedure", "function",
 			"boolean", "integer", "real", "double", "div",
-			"procedure", "function", "mod", "and", "or", "end"};
+			 "mod", "and", "or", "not", "true", "false", "end"};
 
 int iskeyword ( char const *identifier) {
 	int token;

@@ -138,16 +138,27 @@ void stmt(void){
 	case REPEAT:
 		repstmt();
 		break;
-	case ID: case DEC: case FLT: case '(':
+	case ID:
+	case DEC:
+	case FLT:
+	case TRUE:
+	case FALSE:
+	case NOT:
+	case '-':
+	case '(':
 		expr(0);
 		break;
 	}
+	default:
+		/*<epsilon>*/
+		;
+
 }
 
 /* IF expr THEN stmt [ ELSE stmt ] */
-void ifstmt(void){
+void ifstmt(void) {
 	match(IF);
-	expr(0);
+	if(superexpr(BOOLEAN) < 0 ) //DEU RUIM
 	match(THEN);
 	stmt();
 
@@ -158,9 +169,9 @@ void ifstmt(void){
 }
 
 /* WHILE expr REPEAT stmt */
-void whilestmt(void){
+void whilestmt(void) {
 	match(WHILE);
-	expr(0);
+	if(superexpr(BOOLEAN) < 0 ) //DEU RUIM
 	match(REPEAT);
 	stmt();
 }
@@ -170,7 +181,7 @@ void repstmt(void){
 	match(REPEAT);
 	stmtlist();
 	match(UNTIL);
-	expr(0);
+	if(superexpr(BOOLEAN) < 0 ) //DEU RUIM
 }
 
 /*
@@ -204,11 +215,73 @@ void repstmt(void){
 * LVALUE  || BOOLEAN  | INTEGER | REAL | DOUBLE
 * =============================================
 * BOOLEAN || BOOLEAN  |    NA   |  NA  |  NA
-* INTEGER || NA       | INTEGER |  NA  |  NA
-* REAL    || NA       |   REAL  | REAL |  NA
-* DOUBLE  || NA       | DOUBLE  |DOUBLE| DOUBLE
+* INTEGER ||    NA    | INTEGER |  NA  |  NA
+* REAL    ||    NA    |   REAL  | REAL |  NA
+* DOUBLE  ||    NA    | DOUBLE  |DOUBLE| DOUBLE
 *
 */
+int is_compatible(int ltype, int rtype) {
+	switch(ltype) {
+		case BOOLEAN:
+		case INTEGER:
+			if(rtype == ltype) return ltype;
+			break;
+		case REAL:
+			switch(rtype) {
+				case INTEGER:
+				case REAL:
+				return ltype;
+			}
+			break;
+		case DOUBLE:
+			switch(rtype) {
+				case INTEGER:
+				case REAL:
+				case DOUBLE:
+				return ltype;
+			}
+	}
+	return 0;
+}
+
+int is_relop() {
+	switch(lookahead) {
+		case '>':
+			match('>');
+			if(lookahead == '=') {
+				match('=');
+				return GEQ;
+			}
+			return '>';
+		case '<':
+			match('<');
+			if(lookahead == '>') {
+				match('>');
+				return NEQ;
+			}
+			if(lookahead == '=') {
+				match('=');
+				return LEQ;
+			}
+			return '<';
+		case '=':
+			match('=');
+			return '=';
+	}
+	return 0;
+}
+
+/*superexpr -> expr [opref expr]*/
+int superexpr(inherited_type) {
+	int t1, t2;
+	t1 = expr(inherited_type);
+	if(is_relop()) {
+		t2 = expr(t1);
+	}
+	if()
+	return min(BOOLEAN, t2);
+}
+
 int expr (int inherited_type){
 	int varlocality, lvalue = 0, acctype = inherited_type, syntype, ltype, rtype;
 	if (lookahead == '-'){
@@ -247,7 +320,7 @@ int expr (int inherited_type){
 			lvalue = 1;
 			ltype = syntype;
 			match(ASGN);
-			rtype = expr(ltype);
+			rtype = superexpr(ltype);
 			if(is_compatible(ltype, rtype)) acctype = max(rtype, acctype);
 			else acctype = -1;
 
@@ -273,7 +346,7 @@ int expr (int inherited_type){
 		break;
 	default :
 		match('(');
-		syntype = expr(0);
+		syntype = superexpr(0);
 		if(is_compatible(syntype, acctype)) {
 			acctype = max(acctype, syntype);
 		}
@@ -293,12 +366,6 @@ int expr (int inherited_type){
 	}
 }
 
-int is_compatible(int syntype, int acctype) {
-	//if( syntype == acctype) return 1;
-	//return 0;
-	return syntype == acctype? 1:0;
-
-}
 /* vrbl -> ID
  *
  * cons -> DEC
