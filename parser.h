@@ -22,7 +22,9 @@ void ifstmt(void);
 void whilestmt(void);
 void repstmt(void);
 
+int is_compatible(int, int);
+int is_relop(void);
+int superexpr(int);
 int expr (int);
 int addop (void);
 int mulop (void);
-int is_compatible(int, int);

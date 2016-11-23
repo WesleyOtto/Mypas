@@ -9,6 +9,8 @@
 #include <lexer.h>
 #include <keywords.h>
 #include <symtab.h>
+#include <mypas.h>
+#include <pseudoassembly.h>
 
 #define MAX_ARG_NUM 1024
 
@@ -51,6 +53,10 @@ int vartype(void){
 	case REAL:
 		match(REAL);
 		return REAL;
+
+	case DOUBLE:
+		match(DOUBLE);
+		return DOUBLE;
 
 	default:
 		match(BOOLEAN);
@@ -96,7 +102,7 @@ void declarative(void){
 	while(lookahead == PROCEDURE || lookahead == FUNCTION){
 		sbpmod = lookahead;
 		match(lookahead);
-		match(ID);
+		match(ID); //sbpname
 		parmdef();
 		if(sbpmod == FUNCTION && lookahead == ':'){
 			match(':');
@@ -126,66 +132,82 @@ void stmtlist(void) {
 
 void stmt(void){
 	switch (lookahead) {
-	case BEGIN:
-		imperative();
-		break;
-	case IF:
-		ifstmt();
-		break;
-	case WHILE:
-		whilestmt();
-		break;
-	case REPEAT:
-		repstmt();
-		break;
-	case ID:
-	case DEC:
-	case FLT:
-	case TRUE:
-	case FALSE:
-	case NOT:
-	case '-':
-	case '(':
-		expr(0);
-		break;
-	default:
-		/*<epsilon>*/
-		;
+		case BEGIN:
+			imperative();
+			break;
+		case IF:
+			ifstmt();
+			break;
+		case WHILE:
+			whilestmt();
+			break;
+		case REPEAT:
+			repstmt();
+			break;
+		case ID:
+		case DEC:
+		case FLT:
+		case TRUE:
+		case FALSE:
+		case NOT:
+		case '-':
+		case '(':
+			superexpr(0);
+			break;
+		default:
+			/*<epsilon>*/
+			;
 	}
 }
 
-int labelcounter = 1;
 /* IF expr THEN stmt [ ELSE stmt ] */
 void ifstmt(void) {
 	int _endif, _else;
 
 	match(IF);
-	if(superexpr(BOOLEAN) < 0 ); //DEU RUIM
-	fprintf(object, "\tjz .L%d\n", _endif = _else = labelcounter++);
+	if(superexpr(BOOLEAN) < 0 ) {
+		fprintf(stderr, "Invalid conditional statment\n");
+        	semanticErr++;
+	}
+
+	_endif = _else = go_false(labelcounter++);
+
 	match(THEN);
 	stmt();
 
 	if(lookahead == ELSE) {
 		match(ELSE);
-		fprintf(object, "\tjmp .L%d\n", _endif = labelcounter++);
-		fprintf(object, "\t.L%d:\n", _else);
+		_endif = jump(labelcounter++);
+		mklabel(_else);
 		stmt();
 	}
-	fprintf(object, "\t.L%d:\n", _endif);
+	mklabel(_endif);
 }
 
-/* WHILE expr REPEAT stmt */
+/* WHILE expr DO stmt */
 void whilestmt(void) {
-	int _while, _endwhile;
+	int _while = labelcounter++, _endwhile;
 
 	match(WHILE);
-	fprintf(object, "\t.L%d:\n", _while = labelcounter++);
-	if(superexpr(BOOLEAN) < 0 ); //DEU RUIM
-	fprintf(object, "\tjz .L%d\n", _endwhile = labelcounter++);
-	match(REPEAT);
+
+	//fprintf(object, "\t.L%d:\n", _while = labelcounter++);
+	mklabel(_while);
+
+	if(superexpr(BOOLEAN) < 0 ) {
+		fprintf(stderr, "Invalid conditional statment\n");
+		semanticErr++;
+	}
+	//fprintf(object, "\tjz .L%d\n", _endwhile = labelcounter++);
+	gofalse(_endwhile);
+
+	match(DO);
 	stmt();
-	fprintf(object, "\tjmp .L%d\n", _while);
-	fprintf(object, "\t.L%d:\n", _endwhile);
+
+	//fprintf(object, "\tjmp .L%d\n", _while);
+	jump(_while);
+
+	//fprintf(object, "\t.L%d:\n", _endwhile);
+	mklabel(_endwhile);
 }
 
 /* REPEAT stmtlist UNTIL expr */
@@ -195,7 +217,10 @@ void repstmt(void) {
 	fprintf(object, "\t.L%d:\n", _repeat = labelcounter++);
 	stmtlist();
 	match(UNTIL);
-	if(superexpr(BOOLEAN) < 0 ); //DEU RUIM
+	if(superexpr(BOOLEAN) < 0 ) {
+		fprintf(stderr, "Invalid conditional statment\n");
+		semanticErr++;
+	}
 	fprintf(object, "\tjnz .L%d\n", _repeat);
 }
 
@@ -255,6 +280,9 @@ int is_compatible(int ltype, int rtype) {
 				case DOUBLE:
 				return ltype;
 			}
+			break;
+		case 0:
+			return rtype;
 	}
 	return 0;
 }
@@ -287,14 +315,20 @@ int is_relop() {
 }
 
 /*superexpr -> expr [opref expr]*/
-int superexpr(inherited_type) {
+int superexpr(int inherited_type) {
 	int t1, t2;
-	t1 = expr(inherited_type);
+	t1 = expr(0);
 	if(is_relop()) {
-		t2 = expr(t1);
+		t2 = expr(0);
+		if(t1 != t2 || t1 == BOOLEAN || t2 == BOOLEAN) {
+			return -1;
+		}
+		return min(BOOLEAN, t2);
 	}
-	//if() CHECAR COMPATIBILIDADE
-	return min(BOOLEAN, t2);
+	if(!is_compatible(inherited_type, t1)) {
+		return -1;
+	}
+	return max(BOOLEAN, t1);
 }
 
 int expr (int inherited_type){
@@ -303,7 +337,7 @@ int expr (int inherited_type){
 		match('-');
 		if(acctype == BOOLEAN) {
 			fprintf(stderr, "incompatible unary operator: fatal error.\n");
-			//VARIAVEL GLOBAL DE ERRO
+			semanticErr++;
 		} else if (acctype == 0) {
 			acctype = INTEGER;
 		}
@@ -311,7 +345,7 @@ int expr (int inherited_type){
 		match(NOT);
 		if(acctype > BOOLEAN) {
 			fprintf(stderr, "incompatible unary operator: fatal error.\n");
-			//VARIAVEL GLOBAL DE ERRO
+			semanticErr++;
 		}
 		acctype = BOOLEAN;
 	}
@@ -330,43 +364,94 @@ int expr (int inherited_type){
 
 		match(ID);
 
-		if ( lookahead == ASGN){
+		if(lookahead == ASGN){
 		/* located variable is ltype */
 			lvalue = 1;
 			ltype = syntype;
 			match(ASGN);
 			rtype = superexpr(ltype);
 			if(is_compatible(ltype, rtype)) acctype = max(rtype, acctype);
-			else acctype = -1;
+			else{
+				acctype = -1;
+				fprintf(stderr, "Incompatible type...fatal error.\n");
+			}
 
 		}else if(varlocality > -1){
 			fprintf(object, "\tpushl %%eax\n\tmovl %s, %%eax\n",
 				symtab_stream + symtab[varlocality][0]);
-			if(acctype < symtab[varlocality][1]) acctype = symtab[varlocality][1];
+			if( (acctype != BOOLEAN && symtab[varlocality][1] != BOOLEAN)
+				|| (acctype == BOOLEAN && symtab[varlocality][1] == BOOLEAN) || acctype == 0) {
+
+					acctype = max(acctype, symtab[varlocality][1]);
+			}
+			else{
+				acctype = -1;
+				fprintf(stderr, "Incompatible type...fatal error.\n");
+			}
 		}
 		break;
+	case TRUE:
+		if(!is_compatible(acctype, BOOLEAN)) {
+			fprintf(stderr, "Incompatible type, expected boolean...fatal error.\n");
+			printf("LEX: %s\n", lexeme);
+			semanticErr++;
+		}else acctype = BOOLEAN;
+		match(TRUE);
+		break;
+	case FALSE:
+		if(!is_compatible(acctype, BOOLEAN)) {
+			fprintf(stderr, "Incompatible type, expected boolean...fatal error.\n");
+			printf("LEX: %s\n", lexeme);
+			semanticErr++;
+		}else acctype = BOOLEAN;
+		match(FALSE);
+		break;
 	case DEC:
-		if(acctype < INTEGER) acctype = INTEGER;
+		if(acctype != BOOLEAN) {
+			acctype = max(acctype, INTEGER);
+		}else{
+			fprintf(stderr, "Incompatible type, expected integer...fatal error.\n");
+			printf("LEX: %s\n", lexeme);
+			semanticErr++;
+		}
 		match(DEC);
 		break;
-	case OCTAL:
-		match(OCTAL);
-		break;
-	case HEX:
-		match(HEX);
-		break;
 	case FLT:
-		if(acctype < REAL) acctype = REAL;
+		if(acctype != BOOLEAN) {
+			acctype = max(acctype, REAL);
+		}else{
+			fprintf(stderr, "Incompatible type, expected real...fatal error.\n");
+			printf("LEX: %s\n", lexeme);
+			semanticErr++;
+		}
+		{
+			float lexval= atof(lexeme);
+			char *fltIEEE = malloc(sizeof(lexeme)+2);
+			sprintf(fltIEEE, "$%i", *((int*)&lexval));
+			rmove_int(fltIEEE);
+			free(fltIEEE);
+		}
 		match(FLT);
+		break;
+	case DBL:
+		if(acctype != BOOLEAN) {
+			acctype = max(acctype, DOUBLE);
+		}else{
+			fprintf(stderr, "Incompatible type, expected double...fatal error.\n");
+			printf("LEX: %s\n", lexeme);
+			semanticErr++;
+		}
+		match(DBL);
 		break;
 	default :
 		match('(');
 		syntype = superexpr(0);
-		if(is_compatible(syntype, acctype)) {
+		if( (acctype != BOOLEAN && syntype != BOOLEAN)
+		|| (acctype == BOOLEAN && syntype == BOOLEAN) || acctype == 0) {
 			acctype = max(acctype, syntype);
-		}
-		else{
+		}else{
 			fprintf(stderr, "parenthesized type incompatible with accumulated type...fatal error.\n");
+			printf("PAR LEX: %s\n", lexeme);
 		}
 		match(')');
 	}
@@ -376,9 +461,19 @@ int expr (int inherited_type){
 
 	/* expression ends donw here */
 	if (lvalue && varlocality > -1) {
-		fprintf (object, "\tmovl %%eax, %s\n",
-			symtab_stream + symtab [varlocality][0]);
+		switch(ltype) {
+			case INTEGER:
+			case REAL:
+				lmove_int(symtab_stream + symtab [varlocality][0]);
+				break;
+			case DOUBLE:		
+				lmove_q(symtab_stream + symtab [varlocality][0]);
+				break;
+			default://case BOOLEAN:
+				
+		}
 	}
+	return acctype;
 }
 
 /* vrbl -> ID

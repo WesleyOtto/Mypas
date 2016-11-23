@@ -1,0 +1,39 @@
+var a,b:integer;
+    c,d:real;
+    e,f:double;
+    x,y:boolean;
+begin
+
+    a := c;
+    a := e;
+    a := x;
+    a := true;
+    a := true and (true or false);
+    a := true and (3 + 2);
+    
+    c := e;
+    c := x;
+    c := true;
+
+    e := x;
+    e := true;
+
+    x := a;
+    x := e;
+    x := c;
+
+    if a then false;
+    if a <= 4.3 then false;
+    if x > true then false;
+    if c > e then false;
+    if 4.3 = 4 then false;
+
+    b := b*c+d;
+    a and y;
+    x + y; <=======VERIFICAR
+    j := 34.2;
+    a := (true and false);
+    a := 3 + (true);
+    b := 3 * 2 + (3.4 / e) - a;
+    
+end.

@@ -1,3 +1,3 @@
-/**@<progcalc.h>::**/
 
 extern int gettoken(FILE *);
+int semanticErr;

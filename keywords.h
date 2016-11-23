@@ -1,7 +1,7 @@
 /**@<keywords.h>::**/
 
 enum {
-	BEGIN = 0x10001,
+	BEGIN = 0x10001, //65537
 	REPEAT,
 	UNTIL,
 	IF,

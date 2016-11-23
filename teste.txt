@@ -1,7 +1,9 @@
-var x, y: integer;
+var a,b:integer;
+    c,d:real;
+    e,f:double;
+    x,y:boolean;
 begin
-	if x > 3 then
-		x := 2*y+4
-	else
-		y:=5
+
+    c and x;
+    
 end.

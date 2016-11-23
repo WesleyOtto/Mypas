@@ -5,8 +5,6 @@ enum {
 	DEC,
 	FLT,
 	DBL,
-	OCTAL,
-	HEX,
 	ASGN,
 	GEQ,
 	LEQ,

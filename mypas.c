@@ -1,37 +1,33 @@
-/**@<progcalc.c>::**/
-
-/*
-1: Tue Aug 16 20:50:47 BRT 2016
-*/
+/**@<mypas.c>::**/
 
 #include <stdio.h>
 #include <stdlib.h>
-/*#include <string.h>*/
 #include <parser.h>
 #include <mypas.h>
 
 FILE *source, *object;
-
+int semanticErr = 0;
 extern int lookahead; // @ parser.c
 
 main (int argc, char *argv[], char *envp[])
 {
 	object = stdout;
-        if (argc == 1) {
-                source = stdin;
-        } else {
-                source = fopen (argv[1], "r");
-                if (source == NULL) {
-                        fprintf (stderr, "%s: cannot open %s... exiting\n",
-                                argv[0], argv[1]);
-                        exit (-1);
-                }
-        }
+	/*if (argc == -1) {
+		source = stdin;
+	} else {*/
+		//source = fopen (argv[1], "r");
+		source = fopen("teste.txt", "r");
+	if (source == NULL) {
+		fprintf (stderr, "%s: cannot open %s... exiting\n",
+				argv[0], argv[1]);
+		exit (-1);
+	}
+	//}
 
-        lookahead = gettoken (source);
+	lookahead = gettoken (source);
 
-        mypas();
+	mypas();
 
-        printf("\n");
-        exit (0);
+	printf("\n");
+	exit (0);
 }

@@ -40,76 +40,9 @@ int is_identifier (FILE *tape) {
 		}
 		ungetc (lexeme[i], tape);
 		lexeme[i] = '\0';
-		printf("Lex: %s\n", lexeme);
-		if( i = iskeyword(lexeme) ) return i;
+		//printf("Lex: %s\n", lexeme);
+		if( (i = iskeyword(lexeme)) ) return i;
 		return ID;
-	}
-	ungetc (lexeme[i], tape);
-	return 0;
-}
-
-int is_hexadecimal (FILE *tape) {
-	int i = 0;
-
-	lexeme[i] = getc(tape);
-	if(lexeme[i] == '0') {
-		++i;
-
-		lexeme[i] = getc(tape);
-		if( (toupper(lexeme[i])) == 'X') {
-			++i;
-
-			lexeme[i] = getc(tape);
-			if(isdigit(lexeme[i]) || (toupper(lexeme[i]) >= 'A' && toupper(lexeme[i]) <= 'F') ) {
-
-				for(++i; ( isdigit( lexeme[i] = getc(tape) ) ) || (toupper(lexeme[i]) >= 'A' && toupper(lexeme[i]) <= 'F'); ++i) {
-					if(i >= MAXID_SIZE) i = MAXID_SIZE;
-				}
-				ungetc(lexeme[i], tape);
-				lexeme[i] = '\0';
-				return HEX;
-			}
-
-			ungetc(lexeme[i], tape);
-			--i;
-			ungetc(lexeme[i], tape);
-			--i;
-			ungetc(lexeme[i], tape);
-			return 0;
-		}
-		else{
-			ungetc(lexeme[i], tape);
-			--i;
-			ungetc(lexeme[i], tape);
-			return 0;
-		}
-	}
-	ungetc(lexeme[i], tape);
-	return 0;
-}
-
-int is_octal (FILE *tape) {
-	int i = 0;
-
-	lexeme[i] = getc(tape);
-	if (lexeme[i] == '0') {
-		++i;
-
-		lexeme[i] = getc(tape);
-		if ( lexeme[i] >= '0' && lexeme[i] <= '7') {
-
-			for(++i; (lexeme[i] = getc(tape)) >= '0' && lexeme[i] <= '7'; ++i) {
-				if(i >= MAXID_SIZE) i = MAXID_SIZE;
-			}
-			ungetc (lexeme[i], tape);
-			lexeme[i] = '\0';
-			return OCTAL;
-		}else {
-			ungetc (lexeme[i], tape);
-			--i;
-			ungetc (lexeme[i], tape);
-			return 0;
-		}
 	}
 	ungetc (lexeme[i], tape);
 	return 0;
@@ -206,25 +139,17 @@ int gettoken(FILE *sourcecode) {
 
 	skipspaces (sourcecode);
 
-	if(token = is_identifier(sourcecode) ) {
-		printf("TK: %d\n", token);
-		return token;
-	}
-	
-	if(token = is_assign(sourcecode) ) {
+	if( (token = is_identifier(sourcecode)) ) {
+		//printf("TK: %d\n", token);
 		return token;
 	}
 
-	if(token = is_octal(sourcecode) ) {
-		return OCTAL;
+	if( (token = is_assign(sourcecode)) ) {
+		return token;
 	}
 
-	if(token = is_hexadecimal(sourcecode) ) {
-		return HEX;
-	}
-
-	if(token = is_float (sourcecode) ) {
-		printf("TOKEN>: %d", token);
+	if( (token = is_float (sourcecode)) ) {
+		//printf("TOKEN: %d\n", token);
 		return token;
 	}
 

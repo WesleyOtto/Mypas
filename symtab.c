@@ -27,5 +27,7 @@ int symtab_append (char const* name, int type){
 	symtab[symtab_nextentry][0] = symtab_stream_next_descriptor;
 	/* preview next stream entry position */
 	symtab_stream_next_descriptor += strlen(name) + 1;
+	symtab[symtab_nextentry][1] = type;
+
 	return symtab_nextentry++;
 }
