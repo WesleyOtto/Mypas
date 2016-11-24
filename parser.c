@@ -331,8 +331,35 @@ int superexpr(int inherited_type) {
 	return max(BOOLEAN, t1);
 }
 
+#define STACK_SIZE 50
+
+int push_OP(int *sp, int *opStack, int *typeStack, int OP, int type) {
+
+	if((*sp) < STACK_SIZE) {
+		(*sp)++;
+		opStack[*sp] = OP;
+		typeStack[*sp] = type;
+		return 1;
+	}
+	return 0;
+}
+
+int pop_OP(int *sp, int *opStack, int *typeStack, int *type) {
+	if((*sp) < 0){
+		(*type) = 0;
+		return 0;
+	}
+	(*type) = typeStack[*sp];
+	int OP = opStack[*sp];
+	(*sp)--;
+	return OP;
+}
+
+
 int expr (int inherited_type){
 	int varlocality, lvalue = 0, acctype = inherited_type, syntype, ltype, rtype;
+	int sp = -1, typeStack[STACK_SIZE], opStack[STACK_SIZE];
+
 	if (lookahead == '-'){
 		match('-');
 		if(acctype == BOOLEAN) {
@@ -409,6 +436,13 @@ int expr (int inherited_type){
 	case DEC:
 		if(acctype != BOOLEAN) {
 			acctype = max(acctype, INTEGER);
+			{
+				int lexval= atoi(lexeme);
+				char *intIEEE = malloc(sizeof(lexeme)+2);
+				sprintf(intIEEE, "$%i", *((int*)&lexval));
+				rmove_int(intIEEE);
+				free(intIEEE);
+			}
 		}else{
 			fprintf(stderr, "Incompatible type, expected integer...fatal error.\n");
 			printf("LEX: %s\n", lexeme);
@@ -419,23 +453,30 @@ int expr (int inherited_type){
 	case FLT:
 		if(acctype != BOOLEAN) {
 			acctype = max(acctype, REAL);
+			{
+				float lexval= atof(lexeme);
+				char *fltIEEE = malloc(sizeof(lexeme)+2);
+				sprintf(fltIEEE, "$%i", *((int*)&lexval));
+				rmove_int(fltIEEE);
+				free(fltIEEE);
+			}
 		}else{
 			fprintf(stderr, "Incompatible type, expected real...fatal error.\n");
 			printf("LEX: %s\n", lexeme);
 			semanticErr++;
-		}
-		{
-			float lexval= atof(lexeme);
-			char *fltIEEE = malloc(sizeof(lexeme)+2);
-			sprintf(fltIEEE, "$%i", *((int*)&lexval));
-			rmove_int(fltIEEE);
-			free(fltIEEE);
 		}
 		match(FLT);
 		break;
 	case DBL:
 		if(acctype != BOOLEAN) {
 			acctype = max(acctype, DOUBLE);
+			{
+				double lexval= strtod(lexeme, NULL);
+				char *dblIEEE = malloc(sizeof(lexeme)+2);
+				sprintf(dblIEEE, "$%i", *((int*)&lexval));
+				rmove_int(dblIEEE);
+				free(dblIEEE);
+			}
 		}else{
 			fprintf(stderr, "Incompatible type, expected double...fatal error.\n");
 			printf("LEX: %s\n", lexeme);
@@ -455,10 +496,78 @@ int expr (int inherited_type){
 		}
 		match(')');
 	}
+	int operator;
+	if ( operator = mulop() ) {
+		push_OP(&sp, opStack, typeStack, operator, acctype);
+		goto F_entry;
+	}
+	if ( operator = addop() ) {
+		push_OP(&sp, opStack, typeStack, operator, acctype);
+		goto T_entry;
+	}
 
-	if ( mulop() ) goto F_entry;
-	if ( addop() ) goto T_entry;
+	int OP, type;
+	while(sp > 0) {
+		OP = pop_OP(&sp, opStack, typeStack, &type);
+		switch (type) {
+			case INTEGER:
+				switch (OP) {
+					case '+':
+						add_int();
+						break;
+					case '-':
+						sub_int();
+						break;
+					case '*':
+						mul_int();
+						break;
+					case '/';
+						div_int();
+						break;
+					case MOD:
+						mod_int();
+				}
+				break;
+			case FLT:
+				switch (OP) {
+					case '+':
+						add_float();
+						break;
+					case '-':
+						sub_float();
+						break;
+					case '*':
+						mul_float();
+						break;
+					case '/';
+						div_float();
+				}
+				break;
+			case DOUBLE:
+				switch (OP) {
+					case '+':
+						add_double();
+						break;
+					case '-':
+						sub_double();
+						break;
+					case '*':
+						mul_double();
+						break;
+					case '/';
+						div_double();
+				}
+				break;
+			case BOOLEAN:
+				if(OP == AND) {
+					
+				}else{
 
+				}
+
+		}
+
+	}
 	/* expression ends donw here */
 	if (lvalue && varlocality > -1) {
 		switch(ltype) {
@@ -466,11 +575,11 @@ int expr (int inherited_type){
 			case REAL:
 				lmove_int(symtab_stream + symtab [varlocality][0]);
 				break;
-			case DOUBLE:		
+			case DOUBLE:
 				lmove_q(symtab_stream + symtab [varlocality][0]);
 				break;
 			default://case BOOLEAN:
-				
+
 		}
 	}
 	return acctype;
@@ -509,6 +618,9 @@ int mulop (void) {
 		case AND:
 			match(AND);
 			return AND;
+		case MOD:
+			match(MOD);
+			return MOD;
 	}
 	return 0;
 }

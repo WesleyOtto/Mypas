@@ -83,5 +83,3 @@ NEG
 	movl	$0, %eax
 .L7:
 	movq	%rax, xx(%rip)
-
-

@@ -41,11 +41,12 @@ int rmove_q(char const* variable) { //64 bits
 /*ULA pseudo-instructions*/
 /*unary*/
 int neg_logic(void) {
-
+	//NOT
 }
 
 int neg_int(void) {
-
+	fprintf(obejct, "\tnegl %%eax\n");
+	return 0;
 }
 
 int neg_float(void) {
@@ -63,7 +64,7 @@ int add_logic(void) {
 
 int add_int(void) {
 	fprintf(object, "\taddl %%eax, (%%esp)\n");
-	fprintf(object, "\tpopl %%eax\n");
+	fprintf(object, "\taddl $4, %%esp\n"); //dec pilha
 	return 0;
 }
 
@@ -171,4 +172,3 @@ int div_double(void) {
 	fprintf(object, "\taddq $8, %%rsp\n"); //dec pilha
 	return 0;
 }
-
