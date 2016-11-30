@@ -94,6 +94,7 @@ int is_exp (FILE *tape, int *count) {
 
 int is_float(FILE *tape) {
 	int i = 0;
+	double exp_value;
 
 	if( (i = is_decimal(tape)) ) { //dec
 		if( lexeme[i] == '.') { //dec.
@@ -108,11 +109,13 @@ int is_float(FILE *tape) {
 		else if(is_exp(tape, &i)) { //dec exp
 			ungetc(lexeme[i], tape);
 			lexeme[i] = '\0';
-//COLOQUEI ESSA PARTE
-			int lexval= atoi(lexeme);
-			int *intIEEE = malloc(sizeof(lexeme)+1);
-			*intIEEE = ((int)&lexval);
-			if(*intIEEE > MAXRAN_SIZE) return DBL;
+
+			// Check if this is a float or a double
+			exp_value = atof(lexeme);
+			if ((exp_value < LOWER_FLOAT_LIMIT) || (exp_value > HIGHER_FLOAT_LIMIT)) {
+				return DBL;
+			}
+
 			return FLT;
 		}
 		ungetc(lexeme[i], tape);
@@ -129,14 +132,14 @@ int is_float(FILE *tape) {
 			is_exp(tape, &i);
 			ungetc(lexeme[i], tape);
 			lexeme[i] = '\0';
-			
-			//COLOQUEI ESSA PARTE
-			int lexval= atoi(lexeme);
-			char *intIEEE = malloc(sizeof(lexeme)+1);
-			*intIEEE = ((int)&lexval);
-			if(*intIEEE > MAXRAN_SIZE) return DBL;
-			return FLT;
 
+			// Check if this is a float or a double
+			exp_value = atof(lexeme);
+			if ((exp_value < LOWER_FLOAT_LIMIT) || (exp_value > HIGHER_FLOAT_LIMIT)) {
+				return DBL;
+			}
+
+			return FLT;
 		}
 		ungetc(lexeme[i], tape);
 		--i;
