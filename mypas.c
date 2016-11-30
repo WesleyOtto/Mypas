@@ -46,8 +46,16 @@ int main (int argc, char *argv[], char *envp[]) {
     return -2;
   }
 
+  object = fopen(output_file_name, "w");
   lookahead = gettoken(source);
   mypas();
+
+  fclose(source);
+  fclose(object);
+
+  if (semanticErr > 0) {
+    remove(output_file_name);
+  }
 
   return semanticErr;
 }
