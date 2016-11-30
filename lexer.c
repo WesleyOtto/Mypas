@@ -81,7 +81,7 @@ int is_exp (FILE *tape, int *count) {
 		}
 		else if(isdigit(lexeme[(*count)])) {
 			for ((*count)++; isdigit (lexeme[(*count)] = getc(tape)); (*count)++) {
-				if((*count) >= MAXID_SIZE) (*count) = MAXID_SIZE;
+					if((*count) >= MAXID_SIZE) (*count) = MAXID_SIZE;
 			}
 				return 1;
 		}
@@ -108,6 +108,11 @@ int is_float(FILE *tape) {
 		else if(is_exp(tape, &i)) { //dec exp
 			ungetc(lexeme[i], tape);
 			lexeme[i] = '\0';
+//COLOQUEI ESSA PARTE
+			int lexval= atoi(lexeme);
+			int *intIEEE = malloc(sizeof(lexeme)+1);
+			*intIEEE = ((int)&lexval);
+			if(*intIEEE > MAXRAN_SIZE) return DBL;
 			return FLT;
 		}
 		ungetc(lexeme[i], tape);
@@ -124,7 +129,14 @@ int is_float(FILE *tape) {
 			is_exp(tape, &i);
 			ungetc(lexeme[i], tape);
 			lexeme[i] = '\0';
+			
+			//COLOQUEI ESSA PARTE
+			int lexval= atoi(lexeme);
+			char *intIEEE = malloc(sizeof(lexeme)+1);
+			*intIEEE = ((int)&lexval);
+			if(*intIEEE > MAXRAN_SIZE) return DBL;
 			return FLT;
+
 		}
 		ungetc(lexeme[i], tape);
 		--i;
