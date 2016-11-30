@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <parser.h>
+#include <keywords.h>
 
 int labelcounter = 1;
 
@@ -20,7 +23,7 @@ int mklabel(int label) {
 
 int lmove_int(char const* variable) { //32 bits
   fprintf (object, "\tmovl %%rax, %s\n", variable);
-  return 0
+  return 0;
 }
 
 int lmove_q(char const* variable) { //64 bits
@@ -50,7 +53,7 @@ int neg_instruction(int type) {
       // TODO
       break;
     case INTEGER:
-      fprintf(obejct, "\tnegl %%rax\n");
+      fprintf(object, "\tnegl %%rax\n");
       break;
     case REAL:
       // TODO
@@ -161,7 +164,7 @@ int mul_instruction(int type) {
 
 int mod_instruction() {
   fprintf(object, "divl (%%rsp)");
-  fprintf(obejct, "movl %%edx, %%rax");
+  fprintf(object, "movl %%edx, %%rax");
   return 0;
 }
 

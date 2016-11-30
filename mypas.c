@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <parser.h>
+#include <string.h>
 #include <mypas.h>
 
 // Source file stream
@@ -18,7 +19,7 @@ extern int lookahead;
 int main (int argc, char *argv[], char *envp[]) {
   char* source_file_name = NULL;
   char* output_file_name = NULL;
-  char* source_file_extension;
+  const char* source_file_extension;
 
   if (argc == 2) {
     source_file_name = argv[1];
@@ -56,7 +57,6 @@ int main (int argc, char *argv[], char *envp[]) {
   }
 
   object = fopen(output_file_name, "w");
-  lookahead = gettoken(source);
   mypas();
 
   fclose(source);

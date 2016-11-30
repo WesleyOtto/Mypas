@@ -24,7 +24,7 @@ void repstmt(void);
 
 int is_compatible(int, int);
 int is_relop(void);
-int superexpr(int);
-int expr (int);
+int expr(int);
+int simple_expr (int);
 int addop (void);
 int mulop (void);

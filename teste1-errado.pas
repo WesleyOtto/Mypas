@@ -30,7 +30,7 @@ begin
 
     b := b*c+d;
     a and y;
-    x + y; <=======VERIFICAR
+    x + y;
     j := 34.2;
     a := (true and false);
     a := 3 + (true);
