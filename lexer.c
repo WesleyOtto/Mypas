@@ -1,5 +1,11 @@
 /**@<lexer.c>::**/
 
+/* The lexical parser scans the source program character by character and
+ * translates into a sequence of lexical symbols or tokens.It is at this stage that
+ * the reserved words, constants, identifiers and other words that belong to the
+ * programming language are recognized.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -7,11 +13,10 @@
 #include <keywords.h>
 #include <lexer.h>
 
+
 void skipspaces (FILE *dish)
 {
-	while ( isspace ( lexeme[0] = getc (dish) ) ){
-		//if (lexeme[0] = '\n') break;
-	}
+	while ( isspace ( lexeme[0] = getc (dish) ) ){}
 	ungetc ( lexeme[0], dish );
 }
 
@@ -92,6 +97,7 @@ int is_exp (FILE *tape, int *count) {
 	return 0;
 }
 
+// Check if this is a float or a double
 int is_float(FILE *tape) {
 	int i = 0;
 	double exp_value;
@@ -101,6 +107,9 @@ int is_float(FILE *tape) {
 			for (i++; isdigit (lexeme[i] = getc(tape)); i++) {
 				if(i >= MAXID_SIZE) i = MAXID_SIZE;
 			}
+
+			/* The variable 'i' is passed as parameter	because it will be modified
+			within this function so as not to lose, the last lexeme */
 			is_exp(tape, &i);
 			ungetc(lexeme[i], tape);
 			lexeme[i] = '\0';
@@ -110,7 +119,7 @@ int is_float(FILE *tape) {
 			ungetc(lexeme[i], tape);
 			lexeme[i] = '\0';
 
-			// Check if this is a float or a double
+			// Check if it is a double
 			exp_value = atof(lexeme);
 			if ((exp_value < LOWER_FLOAT_LIMIT) || (exp_value > HIGHER_FLOAT_LIMIT)) {
 				return DBL;
@@ -133,7 +142,7 @@ int is_float(FILE *tape) {
 			ungetc(lexeme[i], tape);
 			lexeme[i] = '\0';
 
-			// Check if this is a float or a double
+			// Check if this is a double
 			exp_value = atof(lexeme);
 			if ((exp_value < LOWER_FLOAT_LIMIT) || (exp_value > HIGHER_FLOAT_LIMIT)) {
 				return DBL;
@@ -155,7 +164,6 @@ int gettoken(FILE *sourcecode) {
 	skipspaces (sourcecode);
 
 	if( (token = is_identifier(sourcecode)) ) {
-		//printf("TK: %d\n", token);
 		return token;
 	}
 
@@ -164,7 +172,6 @@ int gettoken(FILE *sourcecode) {
 	}
 
 	if( (token = is_float (sourcecode)) ) {
-		//printf("TOKEN: %d\n", token);
 		return token;
 	}
 
