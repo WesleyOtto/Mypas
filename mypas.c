@@ -18,6 +18,7 @@ extern int lookahead;
 int main (int argc, char *argv[], char *envp[]) {
   char* source_file_name = NULL;
   char* output_file_name = NULL;
+  char* source_file_extension;
 
   if (argc == 2) {
     source_file_name = argv[1];
@@ -36,6 +37,14 @@ int main (int argc, char *argv[], char *envp[]) {
     }
   } else {
     print_usage_message();
+    return -1;
+  }
+
+  source_file_extension = get_filename_ext(source_file_name);
+
+  // If it's not .pas extension, abort the program
+  if (strcmp(source_file_extension, "pas")) {
+    fprintf(stderr, "The source file name must have a .pas extension\n");
     return -1;
   }
 
@@ -58,4 +67,18 @@ int main (int argc, char *argv[], char *envp[]) {
   }
 
   return semanticErr;
+}
+
+const char *get_filename_ext(const char *filename) {
+  const char *dot = strrchr(filename, '.');
+  if(!dot || dot == filename) return "";
+  return dot + 1;
+}
+
+void print_usage_message() {
+  fprintf(stderr, "You are not using it correctly, my friend!\n");
+  fprintf(stderr, "Usage:\n\n");
+  fprintf(stderr, "\t<program_name> source_file_name [options]\n\n");
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "\t-o\t\t\t\t\t# Specify an output file name\n");
 }
