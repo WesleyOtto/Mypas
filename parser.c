@@ -2,32 +2,37 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 #include <string.h>
 #include <macros.h>
 #include <tokens.h>
-#include <parser.h>
 #include <lexer.h>
 #include <keywords.h>
 #include <symtab.h>
 #include <mypas.h>
 #include <pseudoassembly.h>
+#include <parser.h>
 
 #define MAX_ARG_NUM 1024
 
 /*mypas -> body'.' */
-void mypas(void){
+void mypas(void)
+{
+	lookahead = gettoken (source);
 	body();
 	match('.');
 }
 
 /* body -> declarative imperative */
-void body(void){
+void body(void)
+{
 	declarative();
 	imperative();
 }
 
 /* namelist -> ID {, ID} */
-char **namelist(void){
+char **namelist(void)
+{
 	char** symvec = calloc(MAX_ARG_NUM, sizeof(char**));
 	int i = 0;
 
@@ -44,8 +49,9 @@ char **namelist(void){
 	return symvec;
 }
 
-int vartype(void){
-	switch(lookahead){
+int vartype(void)
+{
+	switch(lookahead) {
 	case INTEGER:
 		match(INTEGER);
 		return INTEGER;
@@ -65,7 +71,8 @@ int vartype(void){
 }
 
 /* parmdef -> [ ( [VAR] namelist ':' vartype { ';' [VAR] namelist ':' vartype } ) ] */
-void parmdef(void) {
+void parmdef(void)
+{
 	if(lookahead == '(') {
 		match('(');
 		par_begin:
@@ -83,10 +90,11 @@ void parmdef(void) {
 
 /* declarative -> [ VAR namelist ':' vartype ';' { namelist ':' vartype ';' } ]
 				{ sbpmod sbpname parmdef [ ':' fnctype ] ';' body ';' } */
-void declarative(void){
+void declarative(void)
+{
 	int sbpmod, type, i;
 	char **namev;
-	if(lookahead == VAR){
+	if(lookahead == VAR) {
 		match(VAR);
 		do{
 			namev = namelist();
@@ -99,7 +107,7 @@ void declarative(void){
 		}while(lookahead == ID);
 	}
 
-	while(lookahead == PROCEDURE || lookahead == FUNCTION){
+	while(lookahead == PROCEDURE || lookahead == FUNCTION) {
 		sbpmod = lookahead;
 		match(lookahead);
 		match(ID); //sbpname
@@ -115,14 +123,16 @@ void declarative(void){
 }
 
 /* imperative -> BEGIN stmtlist END */
-void imperative(void) {
+void imperative(void)
+{
 	match(BEGIN);
 	stmtlist();
 	match(END);
 }
 
 /* stmtlist -> stmt { ';' stmt } */
-void stmtlist(void) {
+void stmtlist(void)
+{
 	stmt();
 	while(lookahead == ';') {
 		match(';');
@@ -130,7 +140,8 @@ void stmtlist(void) {
 	}
 }
 
-void stmt(void){
+void stmt(void)
+{
 	switch (lookahead) {
 		case BEGIN:
 			imperative();
@@ -144,6 +155,7 @@ void stmt(void){
 		case REPEAT:
 			repstmt();
 			break;
+
 		case ID:
 		case DEC:
 		case FLT:
@@ -152,7 +164,7 @@ void stmt(void){
 		case NOT:
 		case '-':
 		case '(':
-			superexpr(0);
+			expr(0);
 			break;
 		default:
 			/*<epsilon>*/
@@ -160,12 +172,13 @@ void stmt(void){
 	}
 }
 
-/* IF expr THEN stmt [ ELSE stmt ] */
-void ifstmt(void) {
+/* IF simple_expr THEN stmt [ ELSE stmt ] */
+void ifstmt(void)
+{
 	int _endif, _else;
 
 	match(IF);
-	if(superexpr(BOOLEAN) < 0 ) {
+	if(expr(BOOLEAN) < 0 ) {
 		fprintf(stderr, "Invalid conditional statment\n");
         	semanticErr++;
 	}
@@ -184,49 +197,50 @@ void ifstmt(void) {
 	mklabel(_endif);
 }
 
-/* WHILE expr DO stmt */
-void whilestmt(void) {
+/* WHILE simple_expr DO stmt */
+void whilestmt(void)
+{
 	int _while = labelcounter++, _endwhile;
 
 	match(WHILE);
 
-	//fprintf(object, "\t.L%d:\n", _while = labelcounter++);
 	mklabel(_while);
 
-	if(superexpr(BOOLEAN) < 0 ) {
+	if(expr(BOOLEAN) < 0 ) {
 		fprintf(stderr, "Invalid conditional statment\n");
 		semanticErr++;
 	}
-	//fprintf(object, "\tjz .L%d\n", _endwhile = labelcounter++);
-	gofalse(_endwhile);
+	_endwhile = go_false(labelcounter++);
 
 	match(DO);
 	stmt();
 
-	//fprintf(object, "\tjmp .L%d\n", _while);
 	jump(_while);
-
-	//fprintf(object, "\t.L%d:\n", _endwhile);
 	mklabel(_endwhile);
 }
 
-/* REPEAT stmtlist UNTIL expr */
-void repstmt(void) {
-	int _repeat;
+/* REPEAT stmtlist UNTIL simple_expr */
+void repstmt(void)
+{
+	int _repeat = labelcounter++, _endrepeat;
+
 	match(REPEAT);
-	fprintf(object, "\t.L%d:\n", _repeat = labelcounter++);
+
+	mklabel(_repeat);
+
 	stmtlist();
 	match(UNTIL);
-	if(superexpr(BOOLEAN) < 0 ) {
+
+	if(expr(BOOLEAN) < 0 ) {
 		fprintf(stderr, "Invalid conditional statment\n");
 		semanticErr++;
 	}
-	fprintf(object, "\tjnz .L%d\n", _repeat);
+
+	_endrepeat = go_false(labelcounter++);
+	jump(_repeat);
+	mklabel(_endrepeat);
 }
 
-/*
-* expr -> ['-'] term { addop term }
-*/
 /*
 * OP    |  BOOLEAN  | NUMERIC |
 * NOT   |     X     |    NA   |
@@ -260,7 +274,8 @@ void repstmt(void) {
 * DOUBLE  ||    NA    | DOUBLE  |DOUBLE| DOUBLE
 *
 */
-int is_compatible(int ltype, int rtype) {
+int is_compatible(int ltype, int rtype)
+{
 	switch(ltype) {
 		case BOOLEAN:
 		case INTEGER:
@@ -287,7 +302,8 @@ int is_compatible(int ltype, int rtype) {
 	return 0;
 }
 
-int is_relop() {
+int is_relop()
+{
 	switch(lookahead) {
 		case '>':
 			match('>');
@@ -314,13 +330,14 @@ int is_relop() {
 	return 0;
 }
 
-/*superexpr -> expr [opref expr]*/
-int superexpr(int inherited_type) {
+/*expr -> simple_expr [opref simple_expr]*/
+int expr(int inherited_type)
+{
 	int t1, t2;
-	t1 = expr(0);
+	t1 = simple_expr(0);
 	if(is_relop()) {
-		t2 = expr(0);
-		if(t1 != t2 || t1 == BOOLEAN || t2 == BOOLEAN) {
+		t2 = simple_expr(0);
+		if( (t1 == BOOLEAN && t2 != BOOLEAN) || (t2 == BOOLEAN && t1 != BOOLEAN)) {
 			return -1;
 		}
 		return min(BOOLEAN, t2);
@@ -331,36 +348,9 @@ int superexpr(int inherited_type) {
 	return max(BOOLEAN, t1);
 }
 
-#define STACK_SIZE 50
-
-int push_OP(int *sp, int *opStack, int *typeStack, int OP, int type) {
-
-	if((*sp) < STACK_SIZE) {
-		(*sp)++;
-		opStack[*sp] = OP;
-		typeStack[*sp] = type;
-		return 1;
-	}
-	return 0;
-}
-
-int pop_OP(int *sp, int *opStack, int *typeStack, int *type) {
-	if((*sp) < 0){
-		(*type) = 0;
-		return 0;
-	}
-	(*type) = typeStack[*sp];
-	int OP = opStack[*sp];
-	(*sp)--;
-	return OP;
-}
-
-
-int expr (int inherited_type){
-	int varlocality, lvalue = 0, acctype = inherited_type, syntype, ltype, rtype;
-	int sp = -1, typeStack[STACK_SIZE], opStack[STACK_SIZE];
-
-	if (lookahead == '-'){
+int check_neg(int acctype)
+{
+	if (lookahead == '-') {
 		match('-');
 		if(acctype == BOOLEAN) {
 			fprintf(stderr, "incompatible unary operator: fatal error.\n");
@@ -368,7 +358,7 @@ int expr (int inherited_type){
 		} else if (acctype == 0) {
 			acctype = INTEGER;
 		}
-	} else if (lookahead == NOT){
+	} else if (lookahead == NOT) {
 		match(NOT);
 		if(acctype > BOOLEAN) {
 			fprintf(stderr, "incompatible unary operator: fatal error.\n");
@@ -376,198 +366,149 @@ int expr (int inherited_type){
 		}
 		acctype = BOOLEAN;
 	}
+	return acctype;
+}
+
+int check_locality(int varlocality)
+{
+	if(varlocality < 0) {
+		fprintf(stderr, "parser: %s not declared -- fatal error!\n", lexeme);
+		return -1;
+	}else{
+		return symtab[varlocality][1];
+	}
+}
+
+int check_compatibility(int type1, int type2) {
+	return type1 == 0 || (type1 != BOOLEAN && type2 != BOOLEAN)
+			||(type1 == BOOLEAN && type2 == BOOLEAN)? 1:0;
+}
+
+int simple_expr (int inherited_type)
+{
+	int varlocality, lvalue = 0, acctype = inherited_type, syntype, ltype, rtype, addFlag, mulFlag;
+
+	acctype = check_neg(acctype);
 
 	T_entry:
 	F_entry:
-	switch (lookahead){
-	case ID :
-		varlocality = symtab_lookup(lexeme);
-		if(varlocality < 0) {
-			syntype = -1;
-			fprintf(stderr, "parser: %s not declared -- fatal error!\n", lexeme);
-		}else{
-			syntype = symtab[varlocality][1];
-		}
+	switch (lookahead) {
+		case ID :
+			syntype = check_locality( varlocality = symtab_lookup(lexeme));
 
-		match(ID);
+			match(ID);
 
-		if(lookahead == ASGN){
-		/* located variable is ltype */
-			lvalue = 1;
-			ltype = syntype;
-			match(ASGN);
-			rtype = superexpr(ltype);
-			if(is_compatible(ltype, rtype)) acctype = max(rtype, acctype);
-			else{
-				acctype = -1;
-				fprintf(stderr, "Incompatible type...fatal error.\n");
-			}
+			if(lookahead == ASGN){
+			/* located variable is ltype */
+				match(ASGN);
+				
+				lvalue = 1;
+				ltype = syntype;
+				rtype = expr(ltype);
 
-		}else if(varlocality > -1){
-			fprintf(object, "\tpushl %%eax\n\tmovl %s, %%eax\n",
-				symtab_stream + symtab[varlocality][0]);
-			if( (acctype != BOOLEAN && symtab[varlocality][1] != BOOLEAN)
-				|| (acctype == BOOLEAN && symtab[varlocality][1] == BOOLEAN) || acctype == 0) {
+				if(is_compatible(ltype, rtype)) {
+					acctype = max(rtype, acctype);
+				}
+				else{
+					acctype = -1;
+					fprintf(stderr, "Incompatible type...fatal error.\n");
+					semanticErr++;
+				}
 
+			}else if(varlocality > -1) {
+		
+				fprintf(object, "\tpushl %%eax\n\tmovl %s, %%eax\n", symtab_stream + symtab[varlocality][0]);
+
+				if( check_compatibility(acctype, symtab[varlocality][1])){
 					acctype = max(acctype, symtab[varlocality][1]);
+				}
+				else{
+					acctype = -1;
+					fprintf(stderr, "Incompatible type...fatal error.\n");
+					semanticErr++;
+				}
+			}
+			break;
+
+		case TRUE:
+		case FALSE:
+			if(!is_compatible(acctype, BOOLEAN)) {
+				fprintf(stderr, "Incompatible type, expected boolean...fatal error.\n");
+				semanticErr++;
 			}
 			else{
-				acctype = -1;
-				fprintf(stderr, "Incompatible type...fatal error.\n");
+				acctype = BOOLEAN;
 			}
-		}
-		break;
-	case TRUE:
-		if(!is_compatible(acctype, BOOLEAN)) {
-			fprintf(stderr, "Incompatible type, expected boolean...fatal error.\n");
-			printf("LEX: %s\n", lexeme);
-			semanticErr++;
-		}else acctype = BOOLEAN;
-		match(TRUE);
-		break;
-	case FALSE:
-		if(!is_compatible(acctype, BOOLEAN)) {
-			fprintf(stderr, "Incompatible type, expected boolean...fatal error.\n");
-			printf("LEX: %s\n", lexeme);
-			semanticErr++;
-		}else acctype = BOOLEAN;
-		match(FALSE);
-		break;
-	case DEC:
-		if(acctype != BOOLEAN) {
-			acctype = max(acctype, INTEGER);
-			{
-				int lexval= atoi(lexeme);
-				char *intIEEE = malloc(sizeof(lexeme)+2);
-				sprintf(intIEEE, "$%i", *((int*)&lexval));
-				rmove_int(intIEEE);
-				free(intIEEE);
+			match(lookahead);
+			break;
+
+		case DEC:
+			if(acctype != BOOLEAN) {
+				acctype = max(acctype, INTEGER);
+				{
+					int lexval= atoi(lexeme);
+					char *intIEEE = malloc(sizeof(lexeme)+1);
+					sprintf(intIEEE, "$%i", *((int*)&lexval));
+					rmove_int(intIEEE);
+					free(intIEEE);
+				}
+			}else{
+				fprintf(stderr, "Incompatible type, expected integer...fatal error.\n");
+				semanticErr++;
 			}
-		}else{
-			fprintf(stderr, "Incompatible type, expected integer...fatal error.\n");
-			printf("LEX: %s\n", lexeme);
-			semanticErr++;
-		}
-		match(DEC);
-		break;
-	case FLT:
-		if(acctype != BOOLEAN) {
-			acctype = max(acctype, REAL);
-			{
-				float lexval= atof(lexeme);
-				char *fltIEEE = malloc(sizeof(lexeme)+2);
-				sprintf(fltIEEE, "$%i", *((int*)&lexval));
-				rmove_int(fltIEEE);
-				free(fltIEEE);
+			match(DEC);
+			break;
+
+		case FLT:
+			if(acctype != BOOLEAN) {
+				acctype = max(acctype, REAL);
+				{
+					float lexval= atof(lexeme);
+					char *fltIEEE = malloc(sizeof(lexeme)+1);
+					sprintf(fltIEEE, "$%i", *((int*)&lexval));
+					rmove_int(fltIEEE);
+					free(fltIEEE);
+				}
+			}else{
+				fprintf(stderr, "Incompatible type, expected real...fatal error.\n");
+				semanticErr++;
 			}
-		}else{
-			fprintf(stderr, "Incompatible type, expected real...fatal error.\n");
-			printf("LEX: %s\n", lexeme);
-			semanticErr++;
-		}
-		match(FLT);
-		break;
-	case DBL:
-		if(acctype != BOOLEAN) {
-			acctype = max(acctype, DOUBLE);
-			{
-				double lexval= strtod(lexeme, NULL);
-				char *dblIEEE = malloc(sizeof(lexeme)+2);
-				sprintf(dblIEEE, "$%i", *((int*)&lexval));
-				rmove_int(dblIEEE);
-				free(dblIEEE);
+			match(FLT);
+			break;
+
+		case DBL:
+			if(acctype != BOOLEAN) {
+				acctype = max(acctype, DOUBLE);
+				{
+					double lexval= strtod(lexeme, NULL);
+					char *dblIEEE = malloc(sizeof(lexeme)+1);
+					sprintf(dblIEEE, "$%lli", *((long long int*)&lexval));
+					rmove_int(dblIEEE);
+					free(dblIEEE);
+				}
+			}else{
+				fprintf(stderr, "Incompatible type, expected double...fatal error.\n");
+				semanticErr++;
 			}
-		}else{
-			fprintf(stderr, "Incompatible type, expected double...fatal error.\n");
-			printf("LEX: %s\n", lexeme);
-			semanticErr++;
-		}
-		match(DBL);
-		break;
-	default :
-		match('(');
-		syntype = superexpr(0);
-		if( (acctype != BOOLEAN && syntype != BOOLEAN)
-		|| (acctype == BOOLEAN && syntype == BOOLEAN) || acctype == 0) {
-			acctype = max(acctype, syntype);
-		}else{
-			fprintf(stderr, "parenthesized type incompatible with accumulated type...fatal error.\n");
-			printf("PAR LEX: %s\n", lexeme);
-		}
-		match(')');
-	}
-	int operator;
-	if ( operator = mulop() ) {
-		push_OP(&sp, opStack, typeStack, operator, acctype);
-		goto F_entry;
-	}
-	if ( operator = addop() ) {
-		push_OP(&sp, opStack, typeStack, operator, acctype);
-		goto T_entry;
+			match(DBL);
+			break;
+
+		default :
+			match('(');
+			syntype = expr(0);
+			if( check_compatibility(acctype, syntype)) {
+				acctype = max(acctype, syntype);
+			}else{
+				fprintf(stderr, "parenthesized type incompatible with accumulated type...fatal error.\n");
+				semanticErr++;
+			}
+			match(')');
 	}
 
-	int OP, type;
-	while(sp > 0) {
-		OP = pop_OP(&sp, opStack, typeStack, &type);
-		switch (type) {
-			case INTEGER:
-				switch (OP) {
-					case '+':
-						add_int();
-						break;
-					case '-':
-						sub_int();
-						break;
-					case '*':
-						mul_int();
-						break;
-					case '/';
-						div_int();
-						break;
-					case MOD:
-						mod_int();
-				}
-				break;
-			case FLT:
-				switch (OP) {
-					case '+':
-						add_float();
-						break;
-					case '-':
-						sub_float();
-						break;
-					case '*':
-						mul_float();
-						break;
-					case '/';
-						div_float();
-				}
-				break;
-			case DOUBLE:
-				switch (OP) {
-					case '+':
-						add_double();
-						break;
-					case '-':
-						sub_double();
-						break;
-					case '*':
-						mul_double();
-						break;
-					case '/';
-						div_double();
-				}
-				break;
-			case BOOLEAN:
-				if(OP == AND) {
-					
-				}else{
+	if ( mulFlag = mulop() ) goto F_entry;
 
-				}
-
-		}
-
-	}
+	if ( addFlag = addop() ) goto T_entry;
+	
 	/* expression ends donw here */
 	if (lvalue && varlocality > -1) {
 		switch(ltype) {
@@ -578,7 +519,7 @@ int expr (int inherited_type){
 			case DOUBLE:
 				lmove_q(symtab_stream + symtab [varlocality][0]);
 				break;
-			default://case BOOLEAN:
+			//default://case BOOLEAN:
 
 		}
 	}
@@ -627,7 +568,6 @@ int mulop (void) {
 
 
 /***************************** lexer-to-parser interface **************************/
-
 int lookahead; // @ local
 
 void match (int expected) {

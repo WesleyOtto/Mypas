@@ -1,8 +1,8 @@
-CFLAGS=-I. -g
+CFLAGS= -I. -g
 
-project = mypas 
+project= mypas 
 
-relocatables= mypas.o lexer.o parser.o keywords.o symtab.o
+relocatables= mypas.o lexer.o parser.o keywords.o symtab.o pseudoassembly.o
 
 executable= $(project)
 
@@ -13,4 +13,4 @@ clean:
 mostlyclean: clean
 	$(RM) $(executable) *~
 indent:
-	indent -nfca -orig -nuts -ts4 *.[ch]
+	indent -orig -nuts -ts4 *.[ch]
