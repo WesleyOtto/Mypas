@@ -22,9 +22,9 @@ void skipspaces (FILE *dish)
 
 char lexeme[MAXID_SIZE+1];//@ lexer.c
 
-int is_assign(FILE *tape) {
-
-	if (( lexeme[0] = getc(tape)) == ':'){
+int is_assign(FILE *tape)
+{
+	 if (( lexeme[0] = getc(tape)) == ':'){
 		if(( lexeme[1] = getc(tape)) == '='){
 			lexeme[2] = '\0';
 			return ASGN;
@@ -35,7 +35,8 @@ int is_assign(FILE *tape) {
 	return 0;
 }
 
-int is_identifier (FILE *tape) {
+int is_identifier (FILE *tape)
+{
 	int i = 0;
 
 	lexeme[i] = getc(tape);
@@ -53,7 +54,8 @@ int is_identifier (FILE *tape) {
 	return 0;
 }
 
-int is_decimal (FILE *tape) {
+int is_decimal (FILE *tape)
+{
 	int i = 0;
 
 	if (isdigit (lexeme[i] = getc(tape) ) ) {
@@ -71,7 +73,8 @@ int is_decimal (FILE *tape) {
 	return 0;
 }
 
-int is_exp (FILE *tape, int *count) {
+int is_exp (FILE *tape, int *count)
+{
 
 	if( toupper( lexeme[(*count)] ) == 'E') {
 		++(*count);
@@ -98,7 +101,8 @@ int is_exp (FILE *tape, int *count) {
 }
 
 // Check if this is a float or a double
-int is_float(FILE *tape) {
+int is_float(FILE *tape)
+{
 	int i = 0;
 	double exp_value;
 
@@ -158,7 +162,8 @@ int is_float(FILE *tape) {
 	return 0;
 }
 
-int gettoken(FILE *sourcecode) {
+int gettoken(FILE *sourcecode)
+{
 	int token;
 
 	skipspaces (sourcecode);

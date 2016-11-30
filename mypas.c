@@ -16,11 +16,12 @@ int semanticErr = 0;
 // @ parser.c
 extern int lookahead;
 
-int main (int argc, char *argv[], char *envp[]) {
+int main (int argc, char *argv[], char *envp[])
+{
   char* source_file_name = NULL;
   char* output_file_name = "out.s";
   const char* source_file_extension;
-/*
+
   if (argc == 2) {
     source_file_name = argv[1];
     output_file_name = "out.s";
@@ -48,9 +49,7 @@ int main (int argc, char *argv[], char *envp[]) {
     fprintf(stderr, "The source file name must have a .pas extension\n");
     return -1;
   }
-*/
-  //source = fopen(source_file_name, "r");
-  source = fopen("teste.pas", "r");
+  source = fopen(source_file_name, "r");
 
   if (source == NULL) {
     fprintf(stderr, "%s: cannot open %s. Exiting...\n", argv[0], source_file_name);
@@ -71,13 +70,16 @@ int main (int argc, char *argv[], char *envp[]) {
   return semanticErr;
 }
 
-const char *get_filename_ext(const char *filename) {
+// Return the extension of the files
+const char *get_filename_ext(const char *filename)
+{
   const char *dot = strrchr(filename, '.');
   if(!dot || dot == filename) return "";
   return dot + 1;
 }
 
-void print_usage_message() {
+void print_usage_message()
+{
   fprintf(stderr, "You are not using it correctly, my friend!\n");
   fprintf(stderr, "Usage:\n\n");
   fprintf(stderr, "\t<program_name> source_file_name [options]\n\n");

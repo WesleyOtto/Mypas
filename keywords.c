@@ -8,7 +8,8 @@ char *keywords[] = {"begin", "repeat", "until", "if",
 			"boolean", "integer", "real", "double", "div",
 			 "mod", "and", "or", "not", "true", "false", "end"};
 
-int iskeyword ( char const *identifier) {
+int iskeyword ( char const *identifier)
+{
 	int token;
 	for ( token = BEGIN; token <= END; token++) {
 		if ( strcmp ( keywords [token-BEGIN], identifier) == 0 ) return token;

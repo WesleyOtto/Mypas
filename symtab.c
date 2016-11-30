@@ -1,6 +1,6 @@
 #include <string.h>
 #include <symtab.h>
-#include <lexer.h>        //MAXID_SIZE 32
+#include <lexer.h>
 #include <tokens.h>
 
 int symtab[MAX_SYMTAB_ENTRIES][2];
@@ -9,7 +9,9 @@ int symtab_nextentry = 0;
 char symtab_stream[MAX_SYMTAB_ENTRIES*(MAXID_SIZE+1)];
 int symtab_stream_next_descriptor = 0;
 
-int symtab_lookup (char const* name){
+// Search for a name in the symbol table, and return the index
+int symtab_lookup (char const* name)
+{
 	int i;
 	for(i = symtab_nextentry-1; i > -1; i--){
 		if(strcmp(symtab_stream + symtab[i][0], name) == 0) break;
@@ -17,8 +19,9 @@ int symtab_lookup (char const* name){
 	return i;
 }
 
-int symtab_append (char const* name, int type){
-
+//Adds in the symbol table the name of the variable and its type
+int symtab_append (char const* name, int type)
+{
 	if(symtab_nextentry == MAX_SYMTAB_ENTRIES) return -2;
 	if(symtab_lookup(name) > -1) return -3;
 
