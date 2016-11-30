@@ -18,9 +18,9 @@ extern int lookahead;
 
 int main (int argc, char *argv[], char *envp[]) {
   char* source_file_name = NULL;
-  char* output_file_name = NULL;
+  char* output_file_name = "out.s";
   const char* source_file_extension;
-
+/*
   if (argc == 2) {
     source_file_name = argv[1];
     output_file_name = "out.s";
@@ -48,8 +48,9 @@ int main (int argc, char *argv[], char *envp[]) {
     fprintf(stderr, "The source file name must have a .pas extension\n");
     return -1;
   }
-
-  source = fopen(source_file_name, "r");
+*/
+  //source = fopen(source_file_name, "r");
+  source = fopen("teste.pas", "r");
 
   if (source == NULL) {
     fprintf(stderr, "%s: cannot open %s. Exiting...\n", argv[0], source_file_name);
@@ -57,6 +58,7 @@ int main (int argc, char *argv[], char *envp[]) {
   }
 
   object = fopen(output_file_name, "w");
+
   mypas();
 
   fclose(source);

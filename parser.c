@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-// #include <malloc.h>
+#include <malloc.h>
 #include <string.h>
 #include <macros.h>
 #include <tokens.h>
@@ -302,6 +302,18 @@ int is_compatible(int ltype, int rtype)
 	return 0;
 }
 
+/*if 3 > 2
+movl (rsp), ebx
+cmpl eax, ebx
+movl 1, eax
+jg LX
+mov 0, eax
+LX
+
+cmp 0, eax
+jz
+*/
+
 int is_relop()
 {
 	switch(lookahead) {
@@ -309,23 +321,23 @@ int is_relop()
 			match('>');
 			if(lookahead == '=') {
 				match('=');
-				return GEQ;
+				return GEQ; //Greater or equal
 			}
-			return '>';
+			return '>'; //Greater
 		case '<':
 			match('<');
 			if(lookahead == '>') {
 				match('>');
-				return NEQ;
+				return NEQ;	//Not Equal
 			}
 			if(lookahead == '=') {
 				match('=');
-				return LEQ;
+				return LEQ; //Less or equal
 			}
-			return '<';
+			return '<'; //Less
 		case '=':
 			match('=');
-			return '=';
+			return '='; //Equal
 	}
 	return 0;
 }
@@ -336,7 +348,7 @@ int expr(int inherited_type)
 	int t1, t2;
 	t1 = simple_expr(0);
 	if(is_relop()) {
-		t2 = simple_expr(0);
+		t2 = simple_expr(t1);
 		if( (t1 == BOOLEAN && t2 != BOOLEAN) || (t2 == BOOLEAN && t1 != BOOLEAN)) {
 			return -1;
 		}
@@ -384,9 +396,37 @@ int check_compatibility(int type1, int type2) {
 			||(type1 == BOOLEAN && type2 == BOOLEAN)? 1:0;
 }
 
+void operation(int op, int type) {
+	switch(op) {
+
+		case '+':
+		case OR:
+			add_instruction(type);
+			break;
+
+		case '-':
+			sub_instruction(type);
+			break;
+
+
+		case '*':
+		case AND:
+			mul_instruction(type);
+			break;
+
+		case '/':
+			div_instruction(type);
+			break;
+
+		case MOD:
+			mod_instruction();
+			break;
+	}
+}
+
 int simple_expr (int inherited_type)
 {
-	int varlocality, lvalue = 0, acctype = inherited_type, syntype, ltype, rtype, addFlag, mulFlag;
+	int varlocality, lvalue = 0, acctype = inherited_type, syntype, ltype, rtype, addFlag = 0, mulFlag = 0;
 
 	acctype = check_neg(acctype);
 
@@ -401,7 +441,7 @@ int simple_expr (int inherited_type)
 			if(lookahead == ASGN){
 			/* located variable is ltype */
 				match(ASGN);
-				
+
 				lvalue = 1;
 				ltype = syntype;
 				rtype = expr(ltype);
@@ -416,10 +456,10 @@ int simple_expr (int inherited_type)
 				}
 
 			}else if(varlocality > -1) {
-		
+
 				fprintf(object, "\tpushl %%eax\n\tmovl %s, %%eax\n", symtab_stream + symtab[varlocality][0]);
 
-				if( check_compatibility(acctype, symtab[varlocality][1])){
+				if( check_compatibility(acctype, symtab[varlocality][1])) {
 					acctype = max(acctype, symtab[varlocality][1]);
 				}
 				else{
@@ -483,7 +523,7 @@ int simple_expr (int inherited_type)
 					double lexval= strtod(lexeme, NULL);
 					char *dblIEEE = malloc(sizeof(lexeme)+1);
 					sprintf(dblIEEE, "$%lli", *((long long int*)&lexval));
-					rmove_int(dblIEEE);
+					rmove_q(dblIEEE);
 					free(dblIEEE);
 				}
 			}else{
@@ -505,10 +545,16 @@ int simple_expr (int inherited_type)
 			match(')');
 	}
 
+	if(mulFlag) {
+		operation(mulFlag, acctype);
+	}
 	if ( mulFlag = mulop() ) goto F_entry;
 
+	if(addFlag) {
+		operation(addFlag, acctype);
+	}
 	if ( addFlag = addop() ) goto T_entry;
-	
+
 	/* expression ends donw here */
 	if (lvalue && varlocality > -1) {
 		switch(ltype) {

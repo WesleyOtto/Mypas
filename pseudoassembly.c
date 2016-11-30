@@ -32,13 +32,13 @@ int lmove_q(char const* variable) { //64 bits
 }
 
 int rmove_int(char const* variable) { //32 bits
-  fprintf(object, "\tpushl %%rax");
+  fprintf(object, "\tpushl %%rax\n");
   fprintf (object, "\tmovl %s, %%rax\n", variable);
   return 0;
 }
 
 int rmove_q(char const* variable) { //64 bits
-  fprintf(object, "\tpushl %%rax");
+  fprintf(object, "\tpushl %%rax\n");
   fprintf (object, "\tmovq %s, %%rax\n", variable);
   return 0;
 }
@@ -137,6 +137,7 @@ int mul_instruction(int type) {
     case BOOLEAN:
       // TODO
       break;
+      
     case INTEGER:
       fprintf(object, "\tmull (%%rsp)\n");
       fprintf(object, "\taddl $4, %%rsp\n");
@@ -199,3 +200,35 @@ int div_instruction(int type) {
 
   return 0;
 }
+
+int rel(int relop)
+{
+	
+	switch(relop) {
+		case '>':
+			
+			break;
+		
+		case GEQ:
+		
+			break;
+	
+		case '<':
+		
+			break;
+		
+		case LEQ:
+		
+			break;
+	
+		case '=':
+		
+			break;
+		
+		case NEQ:
+		
+			break;
+	}
+	return 0;
+}
+
