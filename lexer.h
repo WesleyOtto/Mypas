@@ -1,4 +1,3 @@
-/**@<lexer.h>::**/
 
 #define MAXID_SIZE 32
 #define LOWER_FLOAT_LIMIT 1.17549e-38

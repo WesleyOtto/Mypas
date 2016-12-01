@@ -11,6 +11,7 @@ int lmove_q(char const* variable);
 int rmove_int(char const* variable);
 int rmove_q(char const* variable);
 
+
 // ULA pseudo-instructions
 
 // Unary instructions
@@ -22,3 +23,6 @@ int sub_instruction(int type);
 int mul_instruction(int type);
 int div_instruction(int type);
 int mod_instruction();
+
+void rel_instruction(char *jump);
+int generate_rel(int relop);

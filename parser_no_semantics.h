@@ -11,7 +11,7 @@ extern void match (int); // @ local
 /* syntax names */
 void mypas(void);
 void body(void);
-char **namelist(void);
+void namelist(void);
 int vartype(void);
 void parmdef(void);
 void declarative(void);
@@ -22,14 +22,8 @@ void ifstmt(void);
 void whilestmt(void);
 void repstmt(void);
 
-int is_compatible(int, int);
 int is_relop(void);
-int expr(int);
-int check_neg(int, int *);
-int check_locality(int);
-int check_compatibility(int, int);
-void operation(int, int);
-void type_convert(int);
-int simple_expr(int);
+void expr(void);
+void simple_expr(void);
 int addop(void);
 int mulop(void);
