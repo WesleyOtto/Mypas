@@ -82,7 +82,7 @@ void print_usage_message()
 {
     fprintf(stderr, "You are not using it correctly, my friend!\n");
     fprintf(stderr, "Usage:\n\n");
-    fprintf(stderr, "\t<program_name> source_file_name [options]\n\n");
+    fprintf(stderr, "\tmypas source_file_name [options]\n\n");
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, "\t-o\t\t\t\t# Specify an output file name\n");
+    fprintf(stderr, "\t-o\t\t\t\tSpecify an output file name\n");
 }
